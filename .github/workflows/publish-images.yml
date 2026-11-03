@@ -40,7 +40,9 @@ jobs:
           file: Dockerfile
           target: navidrome
           push: true
-          build-args: NAVIDROME_VERSION=${{ steps.versions.outputs.navidrome }}
+          build-args: |
+            NAVIDROME_VERSION=${{ steps.versions.outputs.navidrome }}
+            RCLONE_VERSION=${{ steps.versions.outputs.rclone }}
           tags: |
             ghcr.io/${{ github.repository }}:navidrome-${{ steps.versions.outputs.navidrome }}
             ghcr.io/${{ github.repository }}:navidrome-latest
@@ -53,7 +55,9 @@ jobs:
           file: Dockerfile
           target: rclone-sync
           push: true
-          build-args: RCLONE_VERSION=${{ steps.versions.outputs.rclone }}
+          build-args: |
+            NAVIDROME_VERSION=${{ steps.versions.outputs.navidrome }}
+            RCLONE_VERSION=${{ steps.versions.outputs.rclone }}
           tags: |
             ghcr.io/${{ github.repository }}:rclone-${{ steps.versions.outputs.rclone }}
             ghcr.io/${{ github.repository }}:rclone-latest
