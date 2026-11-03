@@ -4,3 +4,4 @@
 rclone.conf
 *.secrets.json
 build/plugins/
+build/navidrome-src/

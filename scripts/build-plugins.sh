@@ -8,7 +8,7 @@ output_dir="$repo_root/build/plugins"
 temp_dir="$(mktemp -d)"
 trap 'rm -rf -- "$temp_dir"' EXIT
 
-for command in cmp curl go jq sha256sum tar unzip zip; do
+for command in cmp curl go jq patch sha256sum tar unzip zip; do
   if ! command -v "$command" >/dev/null 2>&1; then
     echo "Required command not found: $command" >&2
     exit 1
@@ -63,6 +63,13 @@ if ! cmp --silent "$temp_dir/coverartarchive/LICENSE" "$repo_root/licenses/cover
   exit 1
 fi
 
+mkdir -p "$temp_dir/navidrome/ui/src/genre"
+cp "$repo_root/patches/navidrome/genre/GenreList.jsx" \
+  "$repo_root/patches/navidrome/genre/index.jsx" \
+  "$temp_dir/navidrome/ui/src/genre/"
+patch --batch --forward -p1 -d "$temp_dir/navidrome" \
+  < "$repo_root/patches/navidrome-v0.64.2-genres.patch"
+
 build_dir="$temp_dir/navidrome/plugins/examples/coverartarchive-go"
 if [[ ! -d "$temp_dir/navidrome/plugins/pdk/go" ]]; then
   echo "Navidrome source at $pdk_commit does not contain the expected Go plugin PDK." >&2
@@ -82,7 +89,34 @@ cp "$temp_dir/coverartarchive/main.go" \
 )
 unzip -tq "$output_dir/coverartarchive.ndp"
 
+source_output_dir="$repo_root/build/navidrome-src"
+if [[ -e "$source_output_dir" ]]; then
+  rm -rf -- "$source_output_dir"
+fi
+mkdir -p "$source_output_dir"
+cp -a "$temp_dir/navidrome/." "$source_output_dir/"
+mkdir -p "$source_output_dir/build/plugins" "$source_output_dir/licenses"
+cp "$output_dir/nd-lyrics.ndp" "$output_dir/coverartarchive.ndp" \
+  "$source_output_dir/build/plugins/"
+cp "$repo_root/licenses/nd-lyrics-MIT.txt" \
+  "$repo_root/licenses/coverartarchive-MIT.txt" \
+  "$source_output_dir/licenses/"
+
+source_output_dir="$repo_root/build/navidrome-src"
+if [[ -e "$source_output_dir" ]]; then
+  rm -rf -- "$source_output_dir"
+fi
+mkdir -p "$source_output_dir"
+cp -a "$temp_dir/navidrome/." "$source_output_dir/"
+mkdir -p "$source_output_dir/build/plugins" "$source_output_dir/licenses"
+cp "$output_dir/nd-lyrics.ndp" "$output_dir/coverartarchive.ndp" \
+  "$source_output_dir/build/plugins/"
+cp "$repo_root/licenses/nd-lyrics-MIT.txt" \
+  "$repo_root/licenses/coverartarchive-MIT.txt" \
+  "$source_output_dir/licenses/"
+
 printf 'Built and verified pinned plugins:\n'
 printf '  nd-lyrics %s\n' "$lyrics_version"
 printf '  coverartarchive %s against Navidrome %s PDK\n' \
   "$(jq -er '.coverartarchive.version' "$plugin_config")" "$navidrome_version"
+printf 'Prepared patched Navidrome build context at %s\n' "$source_output_dir"

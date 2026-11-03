@@ -47,10 +47,13 @@ In the container shell, run `navidrome --datafolder /data --nobanner user create
 
 ## Navidrome plugins
 
-The Navidrome image includes two pinned, MIT-licensed community plugins. Versions and source commits are in `infra/plugins.json`; `scripts/build-plugins.sh` verifies the lyrics package checksum and builds the cover-art plugin against the same Navidrome PDK version as the server. GitHub Actions runs this build before publishing the image. License notices are included in the repository and image.
+The Navidrome image includes two pinned, MIT-licensed community plugins. Versions and source commits are in `infra/plugins.json`; `scripts/build-plugins.sh` verifies the lyrics package checksum, builds the cover-art plugin against the matching Navidrome PDK, and prepares the patched source tree. GitHub Actions builds that source and publishes the image. License notices are included in the repository and image.
 
 - **nd-lyrics** fetches lyrics from LRCLIB and lyrics.ovh. The Navidrome web UI does not display plugin lyrics; use a compatible Subsonic client. Lyrics are not written to music files: the plugin is configured read-only, and the music share is mounted read-only.
 - **coverartarchive** looks up album artwork through MusicBrainz and the Cover Art Archive. It is last in the metadata-agent order, so it acts as a fallback after the configured built-in agents.
+- **Genres** adds a top-level page listing the genres already found in your music tags. Select a genre to open the matching albums. It does not change tags or music files.
+
+The genre page is a small patch to the pinned Navidrome 0.64.2 UI; the upstream source commit and patch are public in this repository. If the genre list is empty, check that the audio files have genre tags and that Navidrome has scanned the library.
 
 After the image is published and deployed, use the Navidrome plugin UI or its CLI to enable the installed plugins. The CLI is available in the container:
 
@@ -94,7 +97,7 @@ The script requests an Azure-managed certificate and binds `https://music.mikeri
 
 ## Updates
 
-Update the pinned upstream versions in `infra/images.json`, then push to `main`. GitHub Actions builds and publishes the non-root images with versioned tags. After that workflow succeeds, run:
+Update the Navidrome and rclone versions in `infra/images.json` and the plugin versions/source pins in `infra/plugins.json`, then push to `main`. GitHub Actions builds the patched Navidrome image and publishes both images with versioned tags. The Navidrome UI patch is in `patches/navidrome-v0.64.2-genres.patch`; it is applied to pinned GPL-3.0 Navidrome source, whose license is included in the image. The patch may need adjustment if a future upstream version changes those UI files. After the workflow succeeds, run:
 
 ```powershell
 .\scripts\update.ps1
@@ -108,4 +111,4 @@ To override versions without editing the file:
 
 After the first image workflow completes, open the `navidrome-onedrive` package under your GitHub profile and set its visibility to **Public** if GitHub created it as private. Azure must be able to pull these images without a registry credential.
 
-The deployment uses thin non-root wrappers around the official upstream container images; this repository contains no Navidrome or rclone application source.
+The Navidrome image is built from pinned upstream source with the public genre-navigation patch and plugins; the rclone sync image remains a thin non-root wrapper. This repository contains the patch and build scripts, not a copy of the upstream application source.

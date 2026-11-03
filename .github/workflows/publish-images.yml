@@ -9,6 +9,7 @@ on:
       - infra/images.json
       - infra/plugins.json
       - licenses/**
+      - patches/**
       - scripts/build-plugins.sh
       - .github/workflows/publish-images.yml
   workflow_dispatch:
@@ -28,6 +29,8 @@ jobs:
         run: |
           echo "navidrome=$(jq -r '.navidromeVersion' infra/images.json)" >> "$GITHUB_OUTPUT"
           echo "rclone=$(jq -r '.rcloneVersion' infra/images.json)" >> "$GITHUB_OUTPUT"
+          echo "navidrome_sha=$(jq -r '.navidromePdk.commit' infra/plugins.json)" >> "$GITHUB_OUTPUT"
+          echo "navidrome_tag=v$(jq -r '.navidromeVersion' infra/images.json)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Go for the Navidrome plugin build
         uses: actions/setup-go@v5
@@ -35,7 +38,7 @@ jobs:
           go-version: '1.25.x'
           cache: false
 
-      - name: Build and verify Navidrome plugins
+      - name: Prepare patched Navidrome source and plugins
         run: bash scripts/build-plugins.sh
 
       - name: Sign in to GitHub Container Registry
@@ -48,13 +51,13 @@ jobs:
       - name: Publish Navidrome image
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: Dockerfile
-          target: navidrome
+          context: build/navidrome-src
+          file: build/navidrome-src/Dockerfile
+          target: final
           push: true
           build-args: |
-            NAVIDROME_VERSION=${{ steps.versions.outputs.navidrome }}
-            RCLONE_VERSION=${{ steps.versions.outputs.rclone }}
+            GIT_SHA=${{ steps.versions.outputs.navidrome_sha }}
+            GIT_TAG=${{ steps.versions.outputs.navidrome_tag }}
           tags: |
             ghcr.io/${{ github.repository }}:navidrome-${{ steps.versions.outputs.navidrome }}
             ghcr.io/${{ github.repository }}:navidrome-latest
@@ -68,7 +71,6 @@ jobs:
           target: rclone-sync
           push: true
           build-args: |
-            NAVIDROME_VERSION=${{ steps.versions.outputs.navidrome }}
             RCLONE_VERSION=${{ steps.versions.outputs.rclone }}
           tags: |
             ghcr.io/${{ github.repository }}:rclone-${{ steps.versions.outputs.rclone }}

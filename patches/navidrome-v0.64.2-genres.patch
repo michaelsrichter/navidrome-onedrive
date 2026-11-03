@@ -1,0 +1,57 @@
+--- a/ui/src/App.jsx
++++ b/ui/src/App.jsx
+@@ -14,8 +14,9 @@
+ import player from './player'
+ import user from './user'
+ import song from './song'
+ import album from './album'
+ import artist from './artist'
++import genre from './genre'
+ import playlist from './playlist'
+ import radio from './radio'
+ import share from './share'
+@@ -111,5 +111,6 @@
+       {(permissions) => [
+         <Resource name="album" {...album} options={{ subMenu: 'albumList' }} />,
++        <Resource name="genre" {...genre} options={{ label: 'Genres' }} />,
+         <Resource name="artist" {...artist} />,
+         <Resource name="song" {...song} />,
+         <Resource
+@@ -159,5 +159,4 @@
+         <Resource name="translation" />,
+-        <Resource name="genre" />,
+         <Resource name="tag" />,
+         <Resource name="playlistTrack" />,
+         <Resource name="keepalive" />,
+--- a/ui/src/i18n/en.json
++++ b/ui/src/i18n/en.json
+@@ -83,5 +83,11 @@
+       }
+     },
++    "genre": {
++      "name": "Genre |||| Genres",
++      "fields": {
++        "name": "Genre"
++      }
++    },
+     "artist": {
+       "name": "Artist |||| Artists",
+       "fields": {
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -192,5 +192,8 @@
+ # Copy navidrome binary (musl build for Docker, enables native libwebp)
+ COPY --from=build-alpine /out/navidrome /app/
++COPY build/plugins/ /plugins/
++COPY licenses/ /usr/share/licenses/navidrome-plugins/
++COPY LICENSE /usr/share/licenses/navidrome/COPYING
+ 
+ VOLUME ["/data", "/music"]
+ ENV ND_MUSICFOLDER=/music
+@@ -204,4 +207,6 @@
+ WORKDIR /app
+ ENV PATH="/app:${PATH}"
++ENV ND_PLUGINS_FOLDER=/plugins
++USER 1000:1000
+ 
+ ENTRYPOINT ["/app/navidrome"]

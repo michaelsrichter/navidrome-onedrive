@@ -35,6 +35,12 @@ Invoke-Az -Arguments @(
     '--name', $state.containerAppName,
     '--resource-group', $state.resourceGroupName,
     '--image', $NavidromeImage,
+    '--set-env-vars',
+    'ND_PLUGINS_ENABLED=true',
+    'ND_PLUGINS_FOLDER=/plugins',
+    'ND_PLUGINS_AUTORELOAD=true',
+    'ND_AGENTS=deezer,lastfm,listenbrainz,coverartarchive',
+    'ND_LYRICSPRIORITY=embedded,.lrc,.txt,nd-lyrics',
     '--only-show-errors',
     '--output', 'none'
 )
