@@ -43,7 +43,7 @@ Invoke-Az -Arguments @(
     'ND_PLUGINS_AUTORELOAD=true',
     'ND_AGENTS=deezer,lastfm,listenbrainz,coverartarchive',
     'ND_LYRICSPRIORITY=embedded,.lrc,.txt,nd-lyrics',
-    'ND_DBPATH=/data/navidrome.db?cache=shared&_busy_timeout=15000&_journal_mode=DELETE&_foreign_keys=on&synchronous=normal',
+    'ND_DBPATH="/data/navidrome.db?cache=shared&_busy_timeout=15000&_journal_mode=DELETE&_foreign_keys=on&synchronous=normal"',
     '--only-show-errors',
     '--output', 'none'
 )
