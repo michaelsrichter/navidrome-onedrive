@@ -98,7 +98,7 @@ $userObjectId = Get-AzValue -Arguments @('ad', 'signed-in-user', 'show', '--quer
 $storageAccountId = Get-AzValue -Arguments @(
     'storage', 'account', 'show',
     '--resource-group', $state.resourceGroupName,
-    '--account-name', $state.storageAccountName,
+    '--name', $state.storageAccountName,
     '--query', 'id',
     '--output', 'tsv'
 )
