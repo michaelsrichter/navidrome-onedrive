@@ -19,8 +19,8 @@ properties:
             value: /music
           - name: ND_DATAFOLDER
             value: /data
-          - name: ND_SCANSCHEDULE
-            value: 1h
+          - name: ND_SCANNER_SCHEDULE
+            value: "@every 1h"
           - name: ND_ENABLEUSERREGISTRATION
             value: "false"
           - name: ND_LOGLEVEL

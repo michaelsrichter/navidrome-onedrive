@@ -7,7 +7,7 @@ This project deploys the official Navidrome container to Azure Container Apps an
 - One Azure Container Apps environment with a system-assigned identity.
 - One public HTTPS Navidrome app, scaled to zero while idle and limited to one replica. Its Azure Files data mount uses `nobrl` to avoid SMB lock conflicts with Navidrome's SQLite database.
 - Three private Azure Files shares: music, Navidrome state, and the rclone configuration.
-- A scheduled rclone job, created only after OneDrive authorization, that mirrors supported audio and companion files every six hours.
+- A scheduled rclone job, created only after OneDrive authorization, that mirrors supported audio and companion files every six hours; Navidrome rescans the library hourly.
 - A free Azure-managed TLS certificate after the custom-domain DNS records are configured.
 - Two small wrapper images, built by GitHub Actions from the official Navidrome and rclone images, that run as a non-root user.
 
