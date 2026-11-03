@@ -3,3 +3,4 @@
 *.rclone.conf
 rclone.conf
 *.secrets.json
+build/plugins/

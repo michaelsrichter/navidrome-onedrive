@@ -37,7 +37,33 @@ The script asks for a typed `DEPLOY` confirmation before creating resources. It 
 
 The public image package must exist before deployment. Push the repository's `main` branch and wait for the **Publish container images** workflow to finish successfully; on the first run, verify the `navidrome-onedrive` package in GitHub is public.
 
-Open the deployed HTTPS URL and complete Navidrome's first-user setup. The first account becomes the administrator; additional self-registration stays disabled.
+User registration is disabled in this deployment. Create the first administrator from an Azure Container Apps terminal so the password stays out of chat:
+
+```powershell
+az containerapp exec --name navidrome-music --resource-group rg-navidrome-onedrive
+```
+
+In the container shell, run `navidrome --datafolder /data --nobanner user create --username <your-user> --admin` and enter the password at its prompt. The login page will not accept an account until this administrator exists.
+
+## Navidrome plugins
+
+The Navidrome image includes two pinned, MIT-licensed community plugins. Versions and source commits are in `infra/plugins.json`; `scripts/build-plugins.sh` verifies the lyrics package checksum and builds the cover-art plugin against the same Navidrome PDK version as the server. GitHub Actions runs this build before publishing the image. License notices are included in the repository and image.
+
+- **nd-lyrics** fetches lyrics from LRCLIB and lyrics.ovh. The Navidrome web UI does not display plugin lyrics; use a compatible Subsonic client. Lyrics are not written to music files: the plugin is configured read-only, and the music share is mounted read-only.
+- **coverartarchive** looks up album artwork through MusicBrainz and the Cover Art Archive. It is last in the metadata-agent order, so it acts as a fallback after the configured built-in agents.
+
+After the image is published and deployed, use the Navidrome plugin UI or its CLI to enable the installed plugins. The CLI is available in the container:
+
+```sh
+navidrome --datafolder /data --nobanner plugin rescan
+navidrome --datafolder /data --nobanner plugin enable coverartarchive
+navidrome --datafolder /data --nobanner plugin edit nd-lyrics \
+  --config '{"lyricsFormats":"ttml,elrc,lyricsfile,lrc,srt,plain","providersList":[{"provider":"lrclib"},{"provider":"lyrics.ovh"}],"providerMode":"priority","writeLyrics":false,"enableCache":true}' \
+  --all-users --all-libraries --no-write-access
+navidrome --datafolder /data --nobanner plugin enable nd-lyrics
+```
+
+The `nd-lyrics` plugin requests broad outbound HTTP access for its provider support; its file-writing capability remains disabled. **AudioMuse-AI is not installed:** its Navidrome plugin requires a separate core service, worker, PostgreSQL database, and a library analysis.
 
 ## Connect your personal OneDrive
 

@@ -25,6 +25,16 @@ properties:
             value: "false"
           - name: ND_LOGLEVEL
             value: info
+          - name: ND_PLUGINS_ENABLED
+            value: "true"
+          - name: ND_PLUGINS_FOLDER
+            value: /plugins
+          - name: ND_PLUGINS_AUTORELOAD
+            value: "true"
+          - name: ND_AGENTS
+            value: "deezer,lastfm,listenbrainz,coverartarchive"
+          - name: ND_LYRICSPRIORITY
+            value: "embedded,.lrc,.txt,nd-lyrics"
         volumeMounts:
           - volumeName: music
             mountPath: /music

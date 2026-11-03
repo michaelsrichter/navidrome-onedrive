@@ -1,0 +1,18 @@
+{
+  "navidromePdk": {
+    "version": "0.64.2",
+    "commit": "101145742f4762164202cb4858c9126258bdc463"
+  },
+  "lyrics": {
+    "repository": "J0R6IT0/navidrome-lyrics-plugin",
+    "version": "v8.1.0",
+    "commit": "ef45f959c93a6ef188f2579d4a20ae699ecb7116",
+    "asset": "nd-lyrics.ndp",
+    "sha256": "29dd571ba0d4bb756e62c0d5c594a2d7e7c9ccec2950f3b027bd64c73c605715"
+  },
+  "coverartarchive": {
+    "repository": "sunsetroute1/navidrome-coverartarchive-plugin",
+    "version": "v1.0.0",
+    "commit": "85cfe168454533b7359b211d1f0936a4d30c5d99"
+  }
+}
