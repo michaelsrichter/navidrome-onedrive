@@ -32,9 +32,15 @@ if ($txtValues -notcontains $verificationId) {
     throw "The TXT record '$txtRecordName' is missing or does not match the Azure verification ID. Check scripts/show-domain-records.ps1 and retry after DNS propagation."
 }
 
-& az containerapp hostname add --name $state.containerAppName --resource-group $state.resourceGroupName --hostname $state.domain --only-show-errors --output none
+$existingHostname = (& az containerapp hostname list --name $state.containerAppName --resource-group $state.resourceGroupName --query "[?name=='$($state.domain)'].name | [0]" --output tsv).Trim()
 if ($LASTEXITCODE -ne 0) {
-    throw 'Azure could not add the custom hostname.'
+    throw 'Azure could not list the registered hostnames.'
+}
+if ($existingHostname -ine $state.domain) {
+    & az containerapp hostname add --name $state.containerAppName --resource-group $state.resourceGroupName --hostname $state.domain --only-show-errors --output none
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Azure could not add the custom hostname.'
+    }
 }
 
 & az containerapp hostname bind --name $state.containerAppName --resource-group $state.resourceGroupName --environment $state.environmentName --hostname $state.domain --validation-method CNAME --only-show-errors --output none
