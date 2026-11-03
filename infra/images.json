@@ -1,0 +1,5 @@
+{
+  "imageRepository": "ghcr.io/michaelsrichter/navidrome-onedrive",
+  "navidromeVersion": "0.64.2",
+  "rcloneVersion": "1.75.2"
+}

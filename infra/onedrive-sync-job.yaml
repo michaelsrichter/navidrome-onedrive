@@ -1,0 +1,53 @@
+properties:
+  environmentId: __ENVIRONMENT_ID__
+  configuration:
+    triggerType: Schedule
+    scheduleTriggerConfig:
+      cronExpression: "0 */6 * * *"
+      parallelism: 1
+      replicaCompletionCount: 1
+    replicaRetryLimit: 1
+    replicaTimeout: 14400
+  template:
+    containers:
+      - name: rclone-sync
+        image: __RCLONE_IMAGE__
+        command:
+          - /bin/sh
+        args:
+          - -ec
+          - |
+            test -s /config/rclone.conf || { echo "Missing /config/rclone.conf; run scripts/connect-onedrive.ps1." >&2; exit 1; }
+            test -n "$RCLONE_REMOTE" || { echo "RCLONE_REMOTE is required." >&2; exit 1; }
+            test -n "$RCLONE_PATH" || { echo "RCLONE_PATH is required." >&2; exit 1; }
+            rclone --config /config/rclone.conf sync "${RCLONE_REMOTE}:${RCLONE_PATH}" /music \
+              --ignore-case \
+              --include '*.{mp3,flac,m4a,m4b,mp4,aac,ogg,opus,wav,wma,aiff,aif,ape,wv,mpc,dsf,dff}' \
+              --include '*.{jpg,jpeg,png,gif,webp}' \
+              --include '*.{m3u,m3u8,pls,cue,lrc}' \
+              --transfers 4 \
+              --checkers 8 \
+              --log-level NOTICE
+        resources:
+          cpu: 0.5
+          memory: 1Gi
+        env:
+          - name: RCLONE_REMOTE
+            value: __RCLONE_REMOTE__
+          - name: RCLONE_PATH
+            value: __RCLONE_PATH_JSON__
+        volumeMounts:
+          - volumeName: config
+            mountPath: /config
+            readOnly: true
+          - volumeName: music
+            mountPath: /music
+    volumes:
+      - name: config
+        storageType: AzureFile
+        storageName: rclone-config
+        mountOptions: dir_mode=0777,file_mode=0666,uid=1000,gid=1000
+      - name: music
+        storageType: AzureFile
+        storageName: music-readwrite
+        mountOptions: dir_mode=0777,file_mode=0666,uid=1000,gid=1000

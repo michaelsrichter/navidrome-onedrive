@@ -1,0 +1,5 @@
+.deployment.local.json
+.env
+*.rclone.conf
+rclone.conf
+*.secrets.json

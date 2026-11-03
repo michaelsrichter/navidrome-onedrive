@@ -1,0 +1,60 @@
+name: Publish container images
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - Dockerfile
+      - infra/images.json
+      - .github/workflows/publish-images.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read pinned versions
+        id: versions
+        run: |
+          echo "navidrome=$(jq -r '.navidromeVersion' infra/images.json)" >> "$GITHUB_OUTPUT"
+          echo "rclone=$(jq -r '.rcloneVersion' infra/images.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Sign in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Navidrome image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          target: navidrome
+          push: true
+          build-args: NAVIDROME_VERSION=${{ steps.versions.outputs.navidrome }}
+          tags: |
+            ghcr.io/${{ github.repository }}:navidrome-${{ steps.versions.outputs.navidrome }}
+            ghcr.io/${{ github.repository }}:navidrome-latest
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+
+      - name: Publish rclone sync image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          target: rclone-sync
+          push: true
+          build-args: RCLONE_VERSION=${{ steps.versions.outputs.rclone }}
+          tags: |
+            ghcr.io/${{ github.repository }}:rclone-${{ steps.versions.outputs.rclone }}
+            ghcr.io/${{ github.repository }}:rclone-latest
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}

@@ -1,0 +1,43 @@
+properties:
+  configuration:
+    activeRevisionsMode: single
+    ingress:
+      external: true
+      allowInsecure: false
+      targetPort: 4533
+      transport: auto
+  template:
+    containers:
+      - name: navidrome
+        image: __NAVIDROME_IMAGE__
+        resources:
+          cpu: 0.5
+          memory: 1Gi
+        env:
+          - name: ND_MUSICFOLDER
+            value: /music
+          - name: ND_DATAFOLDER
+            value: /data
+          - name: ND_SCANSCHEDULE
+            value: 1h
+          - name: ND_ENABLEUSERREGISTRATION
+            value: "false"
+          - name: ND_LOGLEVEL
+            value: info
+        volumeMounts:
+          - volumeName: music
+            mountPath: /music
+          - volumeName: data
+            mountPath: /data
+    scale:
+      minReplicas: 0
+      maxReplicas: 1
+    volumes:
+      - name: music
+        storageType: AzureFile
+        storageName: music-readonly
+        mountOptions: dir_mode=0777,file_mode=0666,uid=1000,gid=1000
+      - name: data
+        storageType: AzureFile
+        storageName: navidrome-data
+        mountOptions: dir_mode=0777,file_mode=0666,uid=1000,gid=1000
