@@ -48,7 +48,7 @@ Open the deployed HTTPS URL and complete Navidrome's first-user setup. The first
 
 The script requires the rclone remote name `onedrive` by default; use `-RemoteName` if you named it differently. A folder path is required so the whole OneDrive is never synced accidentally. Supported audio extensions and common artwork, playlist, cue-sheet, and lyric files are included; other OneDrive files are excluded. Because the job uses `rclone sync`, deleting a file from the selected OneDrive folder also removes its Azure copy on the next run. The job never writes back to OneDrive.
 
-The rclone configuration contains refresh tokens and, if used, an OAuth app secret. It stays out of Git and is stored in the private Azure Files config share. The connection script grants your Azure identity write access only to that config share so it can upload the file without using a storage key. Re-run the connection script after changing the local rclone configuration or the selected folder.
+The rclone configuration contains refresh tokens. It stays out of Git and is stored in the private Azure Files config share. The connection script grants your Azure identity the file-data role needed to upload that file to the config share without using a storage key. Re-run the connection script after changing the local rclone configuration or the selected folder.
 
 ## Custom domain
 

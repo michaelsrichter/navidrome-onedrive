@@ -102,12 +102,12 @@ $storageAccountId = Get-AzValue -Arguments @(
     '--query', 'id',
     '--output', 'tsv'
 )
-$configShareScope = "$storageAccountId/fileServices/default/shares/$($state.configShareName)"
+$configShareScope = "$storageAccountId/fileServices/default/fileshares/$($state.configShareName)"
 $existingUploadRole = Get-AzValue -Arguments @(
     'role', 'assignment', 'list',
     '--scope', $configShareScope,
     '--assignee-object-id', $userObjectId,
-    '--query', "[?roleDefinitionName=='Storage File Data SMB Share Contributor'].id | [0]",
+    '--query', "[?roleDefinitionName=='Storage File Data Privileged Contributor'].id | [0]",
     '--output', 'tsv'
 ) 2>$null
 if (-not $existingUploadRole) {
@@ -115,7 +115,7 @@ if (-not $existingUploadRole) {
         'role', 'assignment', 'create',
         '--assignee-object-id', $userObjectId,
         '--assignee-principal-type', 'User',
-        '--role', 'Storage File Data SMB Share Contributor',
+        '--role', 'Storage File Data Privileged Contributor',
         '--scope', $configShareScope,
         '--output', 'none'
     ) | Out-Null
