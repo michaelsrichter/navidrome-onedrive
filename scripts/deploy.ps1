@@ -201,6 +201,8 @@ foreach ($mount in @(
 
 $appManifest = Get-Content (Join-Path $repoRoot 'infra\navidrome.yaml') -Raw
 $navidromeImage = "$($imageConfig.imageRepository):navidrome-$($imageConfig.navidromeVersion)"
+$environmentId = Get-AzValue -Arguments @('containerapp', 'env', 'show', '--name', $state.environmentName, '--resource-group', $state.resourceGroupName, '--query', 'id', '--output', 'tsv')
+$appManifest = $appManifest.Replace('__ENVIRONMENT_ID__', $environmentId)
 $appManifest = $appManifest.Replace('__NAVIDROME_IMAGE__', $navidromeImage)
 $manifestPath = Join-Path $env:TEMP 'navidrome-containerapp.yaml'
 try {
@@ -222,7 +224,7 @@ try {
             'containerapp', 'update',
             '--name', $state.containerAppName,
             '--resource-group', $state.resourceGroupName,
-            '--image', $navidromeImage,
+            '--yaml', $manifestPath,
             '--only-show-errors',
             '--output', 'none'
         ) | Out-Null
