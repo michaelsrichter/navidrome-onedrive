@@ -19,6 +19,8 @@ properties:
             value: /music
           - name: ND_DATAFOLDER
             value: /data
+          - name: ND_DBPATH
+            value: "/data/navidrome.db?cache=shared&_busy_timeout=15000&_journal_mode=DELETE&_foreign_keys=on&synchronous=normal"
           - name: ND_SCANNER_SCHEDULE
             value: "@every 1h"
           - name: ND_ENABLEUSERREGISTRATION
