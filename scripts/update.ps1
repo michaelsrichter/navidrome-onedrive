@@ -29,12 +29,14 @@ if (-not $NavidromeImage) {
 if (-not $RcloneImage) {
     $RcloneImage = "$($imageConfig.imageRepository):rclone-$($imageConfig.rcloneVersion)"
 }
+$revisionSuffix = "upd-$([DateTime]::UtcNow.ToString('yyyyMMddHHmmss'))-$([guid]::NewGuid().ToString('N').Substring(0, 6))"
 
 Invoke-Az -Arguments @(
     'containerapp', 'update',
     '--name', $state.containerAppName,
     '--resource-group', $state.resourceGroupName,
     '--image', $NavidromeImage,
+    '--revision-suffix', $revisionSuffix,
     '--set-env-vars',
     'ND_PLUGINS_ENABLED=true',
     'ND_PLUGINS_FOLDER=/plugins',
