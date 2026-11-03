@@ -37,6 +37,8 @@ The script asks for a typed `DEPLOY` confirmation before creating resources. It 
 
 The public image package must exist before deployment. Push the repository's `main` branch and wait for the **Publish container images** workflow to finish successfully; on the first run, verify the `navidrome-onedrive` package in GitHub is public.
 
+Open the deployed HTTPS URL and complete Navidrome's first-user setup. The first account becomes the administrator; additional self-registration stays disabled.
+
 ## Connect your personal OneDrive
 
 1. Install rclone from [rclone.org/downloads](https://rclone.org/downloads/).
