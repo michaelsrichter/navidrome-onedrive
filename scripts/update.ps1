@@ -27,24 +27,66 @@ function Deactivate-ActiveRevisions {
     $output = & az containerapp revision list `
         --name $AppName `
         --resource-group $ResourceGroupName `
-        --query '[?properties.active].name' `
+        --query '[].name' `
         --output tsv
     if ($LASTEXITCODE -ne 0) {
-        throw 'Could not list active Container Apps revisions.'
+        throw 'Could not list Container Apps revisions.'
     }
 
     $revisionText = ($output -join "`n").Trim()
     $revisionNames = $revisionText -split '\r?\n' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
     foreach ($revisionName in $revisionNames) {
-        Write-Host "Deactivating $revisionName to avoid overlapping SQLite writers on Azure Files."
-        Invoke-Az -Arguments @(
-            'containerapp', 'revision', 'deactivate',
-            '--name', $AppName,
-            '--resource-group', $ResourceGroupName,
-            '--revision', $revisionName,
-            '--only-show-errors',
-            '--output', 'none'
-        )
+        $stateJson = & az containerapp revision show `
+            --name $AppName `
+            --resource-group $ResourceGroupName `
+            --revision $revisionName `
+            --query '{active:properties.active,replicas:properties.replicas,runningState:properties.runningState}' `
+            --output json
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not inspect revision '$revisionName' before updating."
+        }
+
+        $revisionState = $stateJson | ConvertFrom-Json
+        if ($revisionState.active) {
+            Write-Host "Deactivating $revisionName to avoid overlapping SQLite writers on Azure Files."
+            Invoke-Az -Arguments @(
+                'containerapp', 'revision', 'deactivate',
+                '--name', $AppName,
+                '--resource-group', $ResourceGroupName,
+                '--revision', $revisionName,
+                '--only-show-errors',
+                '--output', 'none'
+            )
+        }
+
+        $replicaCount = if ($null -eq $revisionState.replicas) { 0 } else { [int]$revisionState.replicas }
+        if (-not $revisionState.active -and $replicaCount -eq 0 -and $revisionState.runningState -eq 'Stopped') {
+            continue
+        }
+
+        Write-Host "Waiting for $revisionName to stop before starting another SQLite writer."
+        $deadline = [DateTime]::UtcNow.AddMinutes(5)
+        do {
+            $stateJson = & az containerapp revision show `
+                --name $AppName `
+                --resource-group $ResourceGroupName `
+                --revision $revisionName `
+                --query '{active:properties.active,replicas:properties.replicas,runningState:properties.runningState}' `
+                --output json
+            if ($LASTEXITCODE -ne 0) {
+                throw "Could not verify that revision '$revisionName' has stopped."
+            }
+
+            $revisionState = $stateJson | ConvertFrom-Json
+            $replicaCount = if ($null -eq $revisionState.replicas) { 0 } else { [int]$revisionState.replicas }
+            if (-not $revisionState.active -and $replicaCount -eq 0 -and $revisionState.runningState -eq 'Stopped') {
+                break
+            }
+            if ([DateTime]::UtcNow -ge $deadline) {
+                throw "Timed out waiting for revision '$revisionName' to stop; refusing to start another SQLite writer."
+            }
+            Start-Sleep -Seconds 5
+        } while ($true)
     }
 }
 
