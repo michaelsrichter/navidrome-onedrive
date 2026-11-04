@@ -1,12 +1,15 @@
 properties:
   environmentId: __ENVIRONMENT_ID__
   configuration:
-    activeRevisionsMode: single
+    activeRevisionsMode: multiple
     ingress:
       external: true
       allowInsecure: false
       targetPort: 4533
       transport: auto
+      traffic:
+        - latestRevision: true
+          weight: 100
   template:
     containers:
       - name: navidrome

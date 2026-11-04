@@ -5,7 +5,7 @@ This project deploys the official Navidrome container to Azure Container Apps an
 ## What gets created
 
 - One Azure Container Apps environment with a system-assigned identity.
-- One public HTTPS Navidrome app, scaled to zero while idle and limited to one replica. Its Azure Files data mount uses `nobrl`; the version-controlled `infra/navidrome.toml` sets SQLite `DELETE` journal mode because WAL is unreliable on the SMB share. Deploy and update scripts upload this non-secret config before starting the app.
+- One public HTTPS Navidrome app, scaled to zero while idle and limited to one replica. It uses multiple-revision mode with traffic sent only to the latest revision. Its Azure Files data mount uses `nobrl`; the version-controlled `infra/navidrome.toml` sets SQLite `DELETE` journal mode because WAL is unreliable on the SMB share. Deploy and update scripts upload this non-secret config before starting the app.
 - Three private Azure Files shares: music, Navidrome state, and the rclone configuration.
 - A scheduled rclone job, created only after OneDrive authorization, that mirrors supported audio and companion files every six hours; Navidrome rescans the library hourly.
 - A free Azure-managed TLS certificate after the custom-domain DNS records are configured.
@@ -97,7 +97,7 @@ The script requests an Azure-managed certificate and binds `https://music.mikeri
 
 ## Updates
 
-Update the Navidrome and rclone versions in `infra/images.json` and the plugin versions/source pins in `infra/plugins.json`, then push to `main`. GitHub Actions builds the patched Navidrome image and publishes both images with versioned tags. The Navidrome UI patch is in `patches/navidrome-v0.64.2-genres.patch`; it is applied to pinned GPL-3.0 Navidrome source, whose license is included in the image. The patch may need adjustment if a future upstream version changes those UI files. The deploy and update scripts upload `infra/navidrome.toml`, deactivate old revisions, and wait for every replica to stop before starting another SQLite writer on Azure Files. This causes a short interruption and aborts the update if a revision does not stop within five minutes. After the workflow succeeds, run:
+Update the Navidrome and rclone versions in `infra/images.json` and the plugin versions/source pins in `infra/plugins.json`, then push to `main`. GitHub Actions builds the patched Navidrome image and publishes both images with versioned tags. The Navidrome UI patch is in `patches/navidrome-v0.64.2-genres.patch`; it is applied to pinned GPL-3.0 Navidrome source, whose license is included in the image. The patch may need adjustment if a future upstream version changes those UI files. The deploy and update scripts upload `infra/navidrome.toml`, deactivate old revisions, and wait for every replica to stop before starting another SQLite writer on Azure Files. This causes a short interruption and aborts the update if a revision does not stop within five minutes. Azure will not automatically roll back to an old revision if the new one fails, avoiding a second SQLite writer; the app may remain offline until the failure is corrected. After the workflow succeeds, run:
 
 ```powershell
 .\scripts\update.ps1

@@ -64,20 +64,34 @@ function Deactivate-ActiveRevisions {
         }
 
         $revisionState = $stateJson | ConvertFrom-Json
-        if ($revisionState.active) {
+        if ($revisionState.active -and $revisionState.runningState -ne 'Deprovisioning') {
             Write-Host "Deactivating $revisionName to avoid overlapping SQLite writers on Azure Files."
-            Invoke-Az -Arguments @(
-                'containerapp', 'revision', 'deactivate',
-                '--name', $AppName,
-                '--resource-group', $ResourceGroupName,
-                '--revision', $revisionName,
-                '--only-show-errors',
-                '--output', 'none'
-            ) | Out-Null
+            $deactivateOutput = & az containerapp revision deactivate `
+                --name $AppName `
+                --resource-group $ResourceGroupName `
+                --revision $revisionName `
+                --only-show-errors `
+                --output none 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                $stateJson = & az containerapp revision show `
+                    --name $AppName `
+                    --resource-group $ResourceGroupName `
+                    --revision $revisionName `
+                    --query '{active:properties.active,replicas:properties.replicas,runningState:properties.runningState}' `
+                    --output json
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Could not verify revision '$revisionName' after deactivation failed."
+                }
+
+                $revisionState = $stateJson | ConvertFrom-Json
+                if ($revisionState.active -and $revisionState.runningState -ne 'Deprovisioning') {
+                    throw "Could not deactivate revision '$revisionName'. $($deactivateOutput -join ' ')"
+                }
+            }
         }
 
         $replicaCount = if ($null -eq $revisionState.replicas) { 0 } else { [int]$revisionState.replicas }
-        if (-not $revisionState.active -and $replicaCount -eq 0 -and $revisionState.runningState -eq 'Stopped') {
+        if (-not $revisionState.active -and $replicaCount -eq 0) {
             continue
         }
 
@@ -96,7 +110,7 @@ function Deactivate-ActiveRevisions {
 
             $revisionState = $stateJson | ConvertFrom-Json
             $replicaCount = if ($null -eq $revisionState.replicas) { 0 } else { [int]$revisionState.replicas }
-            if (-not $revisionState.active -and $replicaCount -eq 0 -and $revisionState.runningState -eq 'Stopped') {
+            if (-not $revisionState.active -and $replicaCount -eq 0) {
                 break
             }
             if ([DateTime]::UtcNow -ge $deadline) {
@@ -297,12 +311,30 @@ try {
         ) | Out-Null
     }
     else {
+        Invoke-Az -Arguments @(
+            'containerapp', 'revision', 'set-mode',
+            '--name', $state.containerAppName,
+            '--resource-group', $state.resourceGroupName,
+            '--mode', 'multiple',
+            '--only-show-errors',
+            '--output', 'none'
+        ) | Out-Null
+
         Deactivate-ActiveRevisions -AppName $state.containerAppName -ResourceGroupName $state.resourceGroupName
         Invoke-Az -Arguments @(
             'containerapp', 'update',
             '--name', $state.containerAppName,
             '--resource-group', $state.resourceGroupName,
             '--yaml', $manifestPath,
+            '--only-show-errors',
+            '--output', 'none'
+        ) | Out-Null
+
+        Invoke-Az -Arguments @(
+            'containerapp', 'ingress', 'traffic', 'set',
+            '--name', $state.containerAppName,
+            '--resource-group', $state.resourceGroupName,
+            '--revision-weight', 'latest=100',
             '--only-show-errors',
             '--output', 'none'
         ) | Out-Null
