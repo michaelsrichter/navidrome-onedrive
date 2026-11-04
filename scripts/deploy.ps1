@@ -271,6 +271,11 @@ foreach ($mount in @(
     ) | Out-Null
 }
 
+& (Join-Path $PSScriptRoot 'upload-navidrome-config.ps1') `
+    -ResourceGroupName $state.resourceGroupName `
+    -StorageAccountName $state.storageAccountName `
+    -ShareName $state.dataShareName
+
 $appManifest = Get-Content (Join-Path $repoRoot 'infra\navidrome.yaml') -Raw
 $navidromeImage = "$($imageConfig.imageRepository):navidrome-$($imageConfig.navidromeVersion)"
 $environmentId = Get-AzValue -Arguments @('containerapp', 'env', 'show', '--name', $state.environmentName, '--resource-group', $state.resourceGroupName, '--query', 'id', '--output', 'tsv')

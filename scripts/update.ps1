@@ -103,6 +103,11 @@ if (-not $RcloneImage) {
 }
 $revisionSuffix = "upd-$([DateTime]::UtcNow.ToString('yyyyMMddHHmmss'))-$([guid]::NewGuid().ToString('N').Substring(0, 6))"
 
+& (Join-Path $PSScriptRoot 'upload-navidrome-config.ps1') `
+    -ResourceGroupName $state.resourceGroupName `
+    -StorageAccountName $state.storageAccountName `
+    -ShareName $state.dataShareName
+
 Deactivate-ActiveRevisions -AppName $state.containerAppName -ResourceGroupName $state.resourceGroupName
 
 Invoke-Az -Arguments @(
@@ -111,13 +116,14 @@ Invoke-Az -Arguments @(
     '--resource-group', $state.resourceGroupName,
     '--image', $NavidromeImage,
     '--revision-suffix', $revisionSuffix,
+    '--remove-env-vars', 'ND_DBPATH',
     '--set-env-vars',
     'ND_PLUGINS_ENABLED=true',
     'ND_PLUGINS_FOLDER=/plugins',
     'ND_PLUGINS_AUTORELOAD=true',
+    'ND_CONFIGFILE=/data/navidrome.toml',
     'ND_AGENTS=deezer,lastfm,listenbrainz,coverartarchive',
     'ND_LYRICSPRIORITY=embedded,.lrc,.txt,nd-lyrics',
-    'ND_DBPATH="/data/navidrome.db?cache=shared&_busy_timeout=15000&_journal_mode=DELETE&_foreign_keys=on&synchronous=normal"',
     '--only-show-errors',
     '--output', 'none'
 )

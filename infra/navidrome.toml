@@ -1,0 +1,1 @@
+DbPath = "/data/navidrome.db?cache=shared&_busy_timeout=15000&_journal_mode=DELETE&_foreign_keys=on&synchronous=normal"
