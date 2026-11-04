@@ -61,7 +61,7 @@ After the image is published and deployed, use the Navidrome plugin UI or its CL
 navidrome --datafolder /data --nobanner plugin rescan
 navidrome --datafolder /data --nobanner plugin enable coverartarchive
 navidrome --datafolder /data --nobanner plugin edit nd-lyrics \
-  --config '{"lyricsFormats":"ttml,elrc,lyricsfile,lrc,srt,plain","providersList":[{"provider":"lrclib"},{"provider":"lyrics.ovh"}],"providerMode":"priority","writeLyrics":false,"enableCache":true}' \
+  --config '{"lyricsFormats":"ttml,elrc,lyricsfile,lrc,srt,plain","providersList":[{"provider":"lrclib","romanizationScript":"none","translationLanguage":"none"},{"provider":"lyrics.ovh","romanizationScript":"none","translationLanguage":"none"}],"providerMode":"priority","writeLyrics":false,"enableCache":true}' \
   --all-users --all-libraries --no-write-access
 navidrome --datafolder /data --nobanner plugin enable nd-lyrics
 ```
@@ -97,7 +97,7 @@ The script requests an Azure-managed certificate and binds `https://music.mikeri
 
 ## Updates
 
-Update the Navidrome and rclone versions in `infra/images.json` and the plugin versions/source pins in `infra/plugins.json`, then push to `main`. GitHub Actions builds the patched Navidrome image and publishes both images with versioned tags. The Navidrome UI patch is in `patches/navidrome-v0.64.2-genres.patch`; it is applied to pinned GPL-3.0 Navidrome source, whose license is included in the image. The patch may need adjustment if a future upstream version changes those UI files. After the workflow succeeds, run:
+Update the Navidrome and rclone versions in `infra/images.json` and the plugin versions/source pins in `infra/plugins.json`, then push to `main`. GitHub Actions builds the patched Navidrome image and publishes both images with versioned tags. The Navidrome UI patch is in `patches/navidrome-v0.64.2-genres.patch`; it is applied to pinned GPL-3.0 Navidrome source, whose license is included in the image. The patch may need adjustment if a future upstream version changes those UI files. The updater deactivates the current revision before starting the next one to avoid concurrent SQLite writers on Azure Files, so expect a short interruption. After the workflow succeeds, run:
 
 ```powershell
 .\scripts\update.ps1

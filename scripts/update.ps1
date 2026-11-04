@@ -18,6 +18,36 @@ function Invoke-Az {
     }
 }
 
+function Deactivate-ActiveRevisions {
+    param(
+        [Parameter(Mandatory)][string]$AppName,
+        [Parameter(Mandatory)][string]$ResourceGroupName
+    )
+
+    $output = & az containerapp revision list `
+        --name $AppName `
+        --resource-group $ResourceGroupName `
+        --query '[?properties.active].name' `
+        --output tsv
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Could not list active Container Apps revisions.'
+    }
+
+    $revisionText = ($output -join "`n").Trim()
+    $revisionNames = $revisionText -split '\r?\n' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+    foreach ($revisionName in $revisionNames) {
+        Write-Host "Deactivating $revisionName to avoid overlapping SQLite writers on Azure Files."
+        Invoke-Az -Arguments @(
+            'containerapp', 'revision', 'deactivate',
+            '--name', $AppName,
+            '--resource-group', $ResourceGroupName,
+            '--revision', $revisionName,
+            '--only-show-errors',
+            '--output', 'none'
+        )
+    }
+}
+
 if (-not (Test-Path $statePath)) {
     throw 'Deployment state was not found. Run scripts/deploy.ps1 first.'
 }
@@ -30,6 +60,8 @@ if (-not $RcloneImage) {
     $RcloneImage = "$($imageConfig.imageRepository):rclone-$($imageConfig.rcloneVersion)"
 }
 $revisionSuffix = "upd-$([DateTime]::UtcNow.ToString('yyyyMMddHHmmss'))-$([guid]::NewGuid().ToString('N').Substring(0, 6))"
+
+Deactivate-ActiveRevisions -AppName $state.containerAppName -ResourceGroupName $state.resourceGroupName
 
 Invoke-Az -Arguments @(
     'containerapp', 'update',

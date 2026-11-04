@@ -35,6 +35,36 @@ function Test-AzResource {
     return $LASTEXITCODE -eq 0
 }
 
+function Deactivate-ActiveRevisions {
+    param(
+        [Parameter(Mandatory)][string]$AppName,
+        [Parameter(Mandatory)][string]$ResourceGroupName
+    )
+
+    $output = & az containerapp revision list `
+        --name $AppName `
+        --resource-group $ResourceGroupName `
+        --query '[?properties.active].name' `
+        --output tsv
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Could not list active Container Apps revisions.'
+    }
+
+    $revisionText = ($output -join "`n").Trim()
+    $revisionNames = $revisionText -split '\r?\n' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+    foreach ($revisionName in $revisionNames) {
+        Write-Host "Deactivating $revisionName to avoid overlapping SQLite writers on Azure Files."
+        Invoke-Az -Arguments @(
+            'containerapp', 'revision', 'deactivate',
+            '--name', $AppName,
+            '--resource-group', $ResourceGroupName,
+            '--revision', $revisionName,
+            '--only-show-errors',
+            '--output', 'none'
+        ) | Out-Null
+    }
+}
+
 if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
     throw 'Azure CLI is required. Install it from https://learn.microsoft.com/cli/azure/install-azure-cli.'
 }
@@ -102,6 +132,7 @@ if ($groupExists) {
     }
 }
 else {
+    Deactivate-ActiveRevisions -AppName $state.containerAppName -ResourceGroupName $state.resourceGroupName
     Invoke-Az -Arguments @(
         'group', 'create',
         '--name', $state.resourceGroupName,
@@ -220,6 +251,7 @@ try {
         ) | Out-Null
     }
     else {
+        Deactivate-ActiveRevisions -AppName $state.containerAppName -ResourceGroupName $state.resourceGroupName
         Invoke-Az -Arguments @(
             'containerapp', 'update',
             '--name', $state.containerAppName,
